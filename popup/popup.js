@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
       title: t.title // We'll store title for nice display in options
     }));
 
-    await chrome.storage.sync.set({ 
+    await chrome.storage.local.set({ 
       startupTabs: list,
       lastUpdated: Date.now()
     });

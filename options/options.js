@@ -20,6 +20,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       item.classList.add('active');
       document.getElementById(target).classList.add('active');
+
+      if (target === 'about') {
+        loadLogs();
+      }
     });
   });
 
@@ -38,16 +42,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Auto-Cleanup Toggle
   const cleanupToggle = document.getElementById('auto-cleanup-toggle');
   cleanupToggle.addEventListener('change', async (e) => {
-    await chrome.storage.sync.set({ autoCleanup: e.target.checked });
+    await chrome.storage.local.set({ autoCleanup: e.target.checked });
   });
 
   // Initial UI state for toggle
-  const { autoCleanup = true } = await chrome.storage.sync.get("autoCleanup");
+  const { autoCleanup = true } = await chrome.storage.local.get("autoCleanup");
   cleanupToggle.checked = autoCleanup;
 });
 
 async function loadData() {
-  const data = await chrome.storage.sync.get("startupTabs");
+  const data = await chrome.storage.local.get("startupTabs");
   startupTabs = data.startupTabs || [];
   renderTabs();
 }
@@ -159,7 +163,7 @@ async function saveTab() {
     startupTabs.push(tabData);
   }
 
-  await chrome.storage.sync.set({ startupTabs });
+  await chrome.storage.local.set({ startupTabs });
   closeModal();
   renderTabs();
 }
@@ -167,7 +171,7 @@ async function saveTab() {
 async function deleteTab(index) {
   if (!confirm("Remove this site from your startup list?")) return;
   startupTabs.splice(index, 1);
-  await chrome.storage.sync.set({ startupTabs });
+  await chrome.storage.local.set({ startupTabs });
   renderTabs();
 }
 
@@ -192,11 +196,30 @@ async function handleDrop(e) {
   if (dragSrcIndex !== targetIndex) {
     const itemToMove = startupTabs.splice(dragSrcIndex, 1)[0];
     startupTabs.splice(targetIndex, 0, itemToMove);
-    await chrome.storage.sync.set({ startupTabs });
+    await chrome.storage.local.set({ startupTabs });
     renderTabs();
   }
 }
 
 function handleDragEnd() {
   this.style.opacity = '1';
+}
+
+async function loadLogs() {
+  const { logs = [] } = await chrome.storage.local.get("logs");
+  const logContainer = document.getElementById('debug-logs');
+  if (!logContainer) return;
+
+  if (logs.length === 0) {
+    logContainer.innerHTML = '<p class="no-logs">No system logs found.</p>';
+    return;
+  }
+
+  logContainer.innerHTML = logs.reverse().map(log => `
+    <div class="log-entry">
+      <span class="log-time">${new Date(log.time).toLocaleTimeString()}</span>
+      <span class="log-msg">${log.msg}</span>
+      ${log.error ? `<pre class="log-error">${log.error}</pre>` : ''}
+    </div>
+  `).join('');
 }

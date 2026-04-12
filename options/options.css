@@ -58,6 +58,7 @@ body {
   font-weight: 700;
   background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -471,4 +472,48 @@ input:checked + .slider:before {
 
 .about-card a:hover {
   text-decoration: underline;
+}
+
+/* Debug Logs */
+.debug-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.logs-container {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.8125rem;
+}
+
+.log-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-time {
+  color: var(--primary);
+  margin-right: 8px;
+}
+
+.log-msg {
+  color: var(--text);
+}
+
+.log-error {
+  color: var(--danger);
+  white-space: pre-wrap;
+  margin-top: 4px;
+  padding-left: 12px;
+  border-left: 2px solid var(--danger);
+}
+
+.no-logs {
+  color: var(--text-muted);
+  font-style: italic;
 }

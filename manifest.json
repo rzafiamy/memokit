@@ -2,12 +2,14 @@
   "manifest_version": 3,
   "name": "MemoKit",
   "version": "1.0.0",
-  "description": "Premium tab management and restoration kit. Keep your workspace clean and persistent.",
+  "description": "Premium tab management and restoration kit.",
   "author": "Makix team - infodev.ovh",
   "permissions": [
-    "tabs",
     "storage",
     "runtime"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"

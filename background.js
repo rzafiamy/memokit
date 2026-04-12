@@ -1,7 +1,6 @@
 /**
  * MemoKit - Background Service Worker
- * Handles startup restoration and tab synchronization logic.
- * Developed by Makix team (infodev.ovh)
+ * Focus: High-reliability tab restoration for production.
  */
 
 const DEFAULT_STARTUP_TABS = [
@@ -9,85 +8,110 @@ const DEFAULT_STARTUP_TABS = [
   { url: "https://infodev.ovh", pinned: false }
 ];
 
-/**
- * Restores the fixed set of tabs and cleans up any extras.
- */
-async function restoreFixedTabs() {
-  console.log("MemoKit: Restoring fixed tabs...");
-  const { startupTabs = DEFAULT_STARTUP_TABS, autoCleanup = true } = await chrome.storage.sync.get(["startupTabs", "autoCleanup"]);
+let isRestoring = false;
+const sleep = (ms) => new Promise(res => setTimeout(res, ms));
 
-  // Get current window tabs
-  const currentTabs = await chrome.tabs.query({ currentWindow: true });
-  const desiredUrls = new Set(startupTabs.map(t => new URL(t.url).href));
+async function logError(msg, error) {
+  try {
+    console.error(`MemoKit: ${msg}`, error);
+    const { logs = [] } = await chrome.storage.local.get("logs");
+    logs.push({ time: new Date().toISOString(), msg, error: error?.message || String(error) });
+    await chrome.storage.local.set({ logs: logs.slice(-50) });
+  } catch (e) {}
+}
 
-  if (autoCleanup) {
-    // Step 1: Close any tab that is NOT in our list (matching exact URL for now)
-    for (const tab of currentTabs) {
-      try {
-        const tabUrl = new URL(tab.url).href;
-        if (!desiredUrls.has(tabUrl)) {
-          console.log(`MemoKit: Removing extra tab: ${tabUrl}`);
-          await chrome.tabs.remove(tab.id);
+async function restoreFixedTabs(retryCount = 0) {
+  if (isRestoring) return;
+  isRestoring = true;
+
+  try {
+    const { startupTabs = DEFAULT_STARTUP_TABS, autoCleanup = true } = await chrome.storage.local.get(["startupTabs", "autoCleanup"]);
+    
+    // Find a valid window with retries
+    let windowId = null;
+    const windows = await chrome.windows.getAll({ populate: false });
+    
+    if (windows && windows.length > 0) {
+       const focused = windows.find(w => w.focused);
+       windowId = focused ? focused.id : windows[0].id;
+    }
+
+    if (!windowId) {
+      if (retryCount < 5) {
+        await sleep(3000);
+        isRestoring = false;
+        return restoreFixedTabs(retryCount + 1);
+      }
+      return;
+    }
+
+    const desiredUrls = new Set();
+    startupTabs.forEach(t => { try { desiredUrls.add(new URL(t.url).href); } catch (e) {} });
+
+    // Step-by-step creation ensuring no race conditions
+    const currentTabs = await chrome.tabs.query({ windowId });
+    for (let i = 0; i < startupTabs.length; i++) {
+        const wanted = startupTabs[i];
+        const exists = currentTabs.some(t => {
+            try { return new URL(t.url).href === new URL(wanted.url).href; } catch { return false; }
+        });
+
+        if (!exists) {
+            await chrome.tabs.create({ windowId, url: wanted.url, pinned: wanted.pinned || false, index: i, active: false });
+            await sleep(300); // Important delay for Snap stability
         }
-      } catch (e) {
-        // Handle cases where tab.url might be empty or invalid (e.g. chrome://)
-        continue;
-      }
     }
-  }
 
-  // Refresh current tabs after potentially removing some
-  const updatedTabs = await chrome.tabs.query({ currentWindow: true });
+    // Step-by-step cleanup
+    if (autoCleanup) {
+        let allTabs = await chrome.tabs.query({ windowId });
+        const tabsToRemove = [];
 
-  // Step 2: Open missing tabs or reposition them
-  for (let i = 0; i < startupTabs.length; i++) {
-    const wanted = startupTabs[i];
-    const existing = updatedTabs.find(t => {
-      try {
-        return new URL(t.url).href === new URL(wanted.url).href;
-      } catch {
-        return false;
-      }
-    });
+        for (const tab of allTabs) {
+            try {
+                if (tab.url.startsWith('chrome-extension://') || tab.url.startsWith('chrome://') || tab.url.startsWith('about:')) continue;
+                const tabUrl = new URL(tab.url).href;
+                if (!desiredUrls.has(tabUrl)) tabsToRemove.push(tab);
+            } catch (e) {}
+        }
 
-    if (!existing) {
-      console.log(`MemoKit: Creating tab: ${wanted.url}`);
-      await chrome.tabs.create({
-        url: wanted.url,
-        pinned: wanted.pinned || false,
-        index: i
-      });
-    } else {
-      // Ensure pinned status and correct index
-      if (existing.pinned !== (wanted.pinned || false)) {
-        await chrome.tabs.update(existing.id, { pinned: wanted.pinned || false });
-      }
-      if (existing.index !== i) {
-        await chrome.tabs.move(existing.id, { index: i });
-      }
+        for (const tab of tabsToRemove) {
+            const pool = await chrome.tabs.query({ windowId });
+            if (pool.length > 1) { // Safety: never close last tab
+                await chrome.tabs.remove(tab.id).catch(() => {});
+                await sleep(300);
+            }
+        }
     }
+  } catch (error) {
+    await logError("Restoration sequence failed", error);
+  } finally {
+    isRestoring = false;
   }
 }
 
-// Run on every browser start
-chrome.runtime.onStartup.addListener(restoreFixedTabs);
+chrome.runtime.onStartup.addListener(() => {
+  setTimeout(restoreFixedTabs, 1500);
+});
 
-// Run when the extension is installed or updated
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") {
-    chrome.storage.sync.set({ 
+    chrome.storage.local.set({ 
       startupTabs: DEFAULT_STARTUP_TABS,
       autoCleanup: true,
       lastUpdated: Date.now()
     });
   }
-  restoreFixedTabs();
+  setTimeout(restoreFixedTabs, 1000);
 });
 
-// Listen for messages from popup or options page
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "restoreNow") {
     restoreFixedTabs().then(() => sendResponse({ success: true }));
-    return true; // Keep message channel open for async response
+    return true; 
   }
 });
+
+
+
+
