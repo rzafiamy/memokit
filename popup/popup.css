@@ -246,6 +246,39 @@ header {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  max-height: 180px; /* Approximately 5 rows of pills */
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.profiles-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.profiles-grid::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.search-container {
+  margin-bottom: 12px;
+}
+
+.search-container input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.8125rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-container input:focus {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.05);
 }
 
 .profile-pill {

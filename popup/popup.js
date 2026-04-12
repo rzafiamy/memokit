@@ -88,6 +88,12 @@ document.addEventListener('DOMContentLoaded', () => {
     newProfileNameInput.value = '';
   });
 
+  // Search/Filter Profiles
+  const searchInput = document.getElementById('profile-search');
+  searchInput.addEventListener('input', (e) => {
+    loadProfiles(e.target.value.toLowerCase());
+  });
+
   confirmSaveBtn.addEventListener('click', async () => {
     const name = newProfileNameInput.value.trim();
     if (!name) {
@@ -104,11 +110,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const { tabProfiles = [] } = await chrome.storage.local.get("tabProfiles");
-    tabProfiles.push({
-      id: Date.now().toString(),
-      name: name,
-      urls: urls
-    });
+    
+    // Check if profile exists
+    const existingIndex = tabProfiles.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+    
+    if (existingIndex >= 0) {
+      if (confirm(`Profile "${tabProfiles[existingIndex].name}" already exists. Update it with current tabs?`)) {
+        tabProfiles[existingIndex].urls = urls;
+        console.log("MemoKit: Profile updated", tabProfiles[existingIndex]);
+      } else {
+        return;
+      }
+    } else {
+      tabProfiles.push({
+        id: Date.now().toString(),
+        name: name,
+        urls: urls
+      });
+      console.log("MemoKit: New profile created", name);
+    }
 
     await chrome.storage.local.set({ tabProfiles });
     
@@ -136,14 +156,33 @@ document.addEventListener('DOMContentLoaded', () => {
   loadProfiles();
 });
 
-async function loadProfiles() {
+async function loadProfiles(filter = '') {
   const { tabProfiles = [] } = await chrome.storage.local.get("tabProfiles");
   const listContainer = document.getElementById('profiles-list');
+  const datalist = document.getElementById('profile-datalist');
   
-  if (tabProfiles.length === 0) return;
+  if (tabProfiles.length === 0) {
+    listContainer.innerHTML = '<p class="empty-hint">No profiles configured.</p>';
+    return;
+  }
+
+  // Update datalist for autocomplete
+  if (datalist) {
+    datalist.innerHTML = tabProfiles.map(p => `<option value="${p.name}">`).join('');
+  }
+
+  const filteredProfiles = tabProfiles.filter(p => 
+    p.name.toLowerCase().includes(filter)
+  );
 
   listContainer.innerHTML = '';
-  tabProfiles.forEach(profile => {
+  
+  if (filteredProfiles.length === 0) {
+    listContainer.innerHTML = '<p class="empty-hint">No profiles match your search.</p>';
+    return;
+  }
+
+  filteredProfiles.forEach(profile => {
     const btn = document.createElement('button');
     btn.className = 'profile-pill';
     btn.innerHTML = `

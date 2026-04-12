@@ -38,7 +38,8 @@
       </div>
 
       <div id="save-profile-form" class="inline-form" style="display: none;">
-        <input type="text" id="new-profile-name" placeholder="Profile Name (e.g. Research)">
+        <input type="text" id="new-profile-name" placeholder="Profile Name (e.g. Research)" list="profile-datalist">
+        <datalist id="profile-datalist"></datalist>
         <div class="form-actions">
           <button id="cancel-save-profile" class="btn-icon">✕</button>
           <button id="confirm-save-profile" class="btn-icon success">✓</button>
@@ -48,6 +49,9 @@
         <div class="section-header-inline">
           <h3>Quick Link Profiles</h3>
           <a href="#" class="manage-link" id="manage-profiles">Manage</a>
+        </div>
+        <div class="search-container">
+          <input type="text" id="profile-search" placeholder="Filter profiles...">
         </div>
         <div id="profiles-list" class="profiles-grid">
           <!-- Profiles will be injected here -->
