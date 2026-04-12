@@ -3,7 +3,7 @@
 **MemoKit** is a premium Chrome Extension kit designed for high-productivity environments. It allows you to define a fixed set of tabs that are automatically restored and maintained every time you start your browser.
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Version](https://img.shields.io/badge/Version-1.0.0-purple.svg)](https://github.com/rzafiamy/memokit)
+[![Version](https://img.shields.io/badge/Version-1.1.0-purple.svg)](https://github.com/rzafiamy/memokit)
 
 ## Key Features
 

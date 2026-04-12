@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Initial UI state for toggle
-  const { autoCleanup = true } = await chrome.storage.local.get("autoCleanup");
+  const { autoCleanup = false } = await chrome.storage.local.get("autoCleanup");
   cleanupToggle.checked = autoCleanup;
 });
 
