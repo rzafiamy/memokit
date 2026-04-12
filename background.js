@@ -167,4 +167,59 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     restoreFixedTabs().then(success => sendResponse({ success }));
     return true; 
   }
+  
+  if (request.action === "switchToProfile") {
+    console.log(`MemoKit: Switching to profile: ${request.profile.name}`);
+    performProfileSwitch(request.profile).then(success => sendResponse({ success }));
+    return true;
+  }
 });
+
+async function performProfileSwitch(profile) {
+  try {
+    const lastFocused = await chrome.windows.getLastFocused({ windowTypes: ['normal'] });
+    const windowId = lastFocused ? lastFocused.id : (await chrome.windows.getAll({ windowTypes: ['normal'] }))[0]?.id;
+    
+    if (!windowId) {
+      console.error("MemoKit: No target window found for profile switch");
+      return false;
+    }
+
+    const oldTabs = await chrome.tabs.query({ windowId });
+    const optionsUrl = chrome.runtime.getURL('options/options.html');
+    const oldTabIds = oldTabs
+      .filter(t => t.id && (!t.url || !t.url.startsWith(optionsUrl)))
+      .map(t => t.id);
+    
+    // 1. Open all new tabs in the background first
+    const newTabIds = [];
+    for (const url of profile.urls) {
+      try {
+        const tab = await chrome.tabs.create({ 
+          windowId,
+          url: url,
+          active: false 
+        });
+        newTabIds.push(tab.id);
+      } catch (e) {
+        console.error(`MemoKit: Failed to create tab for ${url}`, e);
+      }
+    }
+
+    if (newTabIds.length > 0) {
+      // 2. Remove old tabs
+      await chrome.tabs.remove(oldTabIds).catch(e => console.log("MemoKit: Ignored tab removal error", e));
+      
+      // 3. Explicitly activate the first tab of the new profile
+      await chrome.tabs.update(newTabIds[0], { active: true });
+      
+      // 4. Ensure the window itself is focused (fixes the URL bar focus issue)
+      await chrome.windows.update(windowId, { focused: true });
+    }
+    
+    return true;
+  } catch (err) {
+    console.error("MemoKit: Profile switch fatal error", err);
+    return false;
+  }
+}

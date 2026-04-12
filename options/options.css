@@ -269,6 +269,38 @@ nav {
   color: var(--danger);
 }
 
+.action-btn.launch:hover {
+  color: var(--success);
+}
+
+.profile-urls-preview {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.url-preview-item {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-item.expanded {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.tab-item-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
 /* Settings Styles */
 .settings-grid {
   display: flex;
