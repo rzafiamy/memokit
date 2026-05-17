@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Capture Current Windows
   captureBtn.addEventListener('click', async () => {
-    if (!confirm("This will REPLACE your current fixed list. Continue?")) return;
+    if (!(await showCustomDialog("Replace List", "This will REPLACE your current fixed list. Continue?", true))) return;
 
     captureBtn.classList.add('loading');
     
@@ -63,11 +63,11 @@ document.addEventListener('DOMContentLoaded', () => {
       .map(t => t.id);
       
     if (otherTabIds.length > 0) {
-      if (confirm(`Close ${otherTabIds.length} other tabs? (Pinned tabs will be kept)`)) {
+      if (await showCustomDialog("Close Tabs", `Close ${otherTabIds.length} other tabs? (Pinned tabs will be kept)`, true)) {
         await chrome.tabs.remove(otherTabIds);
       }
     } else {
-      alert("No other non-pinned tabs to close.");
+      await showCustomDialog("Notice", "No other non-pinned tabs to close.");
     }
   });
 
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
   confirmSaveBtn.addEventListener('click', async () => {
     const name = newProfileNameInput.value.trim();
     if (!name) {
-      alert("Please enter a profile name");
+      await showCustomDialog("Error", "Please enter a profile name");
       return;
     }
 
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const urls = tabs.map(t => t.url).filter(u => u && !u.startsWith('chrome'));
 
     if (urls.length === 0) {
-      alert("No valid URLs to save");
+      await showCustomDialog("Error", "No valid URLs to save");
       return;
     }
 
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const existingIndex = tabProfiles.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
     
     if (existingIndex >= 0) {
-      if (confirm(`Profile "${tabProfiles[existingIndex].name}" already exists. Update it with current tabs?`)) {
+      if (await showCustomDialog("Update Profile", `Profile "${tabProfiles[existingIndex].name}" already exists. Update it with current tabs?`, true)) {
         tabProfiles[existingIndex].urls = urls;
         console.log("MemoKit: Profile updated", tabProfiles[existingIndex]);
       } else {
@@ -202,4 +202,35 @@ async function switchToProfile(profile) {
   // Use background script for reliable switching (so popup closing doesn't kill the process)
   await chrome.runtime.sendMessage({ action: "switchToProfile", profile });
   window.close(); // Close popup after message is sent
+}
+
+async function showCustomDialog(title, message, isConfirm = false) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('custom-dialog');
+    const titleEl = document.getElementById('custom-dialog-title');
+    const msgEl = document.getElementById('custom-dialog-message');
+    const cancelBtn = document.getElementById('custom-dialog-cancel');
+    const confirmBtn = document.getElementById('custom-dialog-confirm');
+
+    titleEl.textContent = title;
+    msgEl.textContent = message;
+    cancelBtn.style.display = isConfirm ? 'inline-block' : 'none';
+
+    const cleanup = () => {
+      overlay.classList.remove('show');
+      setTimeout(() => { overlay.style.display = 'none'; }, 200);
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+    };
+
+    const onConfirm = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+
+    overlay.style.display = 'flex';
+    void overlay.offsetWidth; // trigger reflow
+    overlay.classList.add('show');
+  });
 }

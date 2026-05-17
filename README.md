@@ -26,9 +26,25 @@
 ## Configuration
 
 Access the **Options** page by right-clicking the MemoKit icon or through the extension popup. Here you can:
-- Add, Edit, or Remove sites.
-- Reorder tabs via drag-and-drop.
-- Toggle **Auto-Cleanup** (automatically close tabs not in your list).
+- **Startup Tabs**: Add, Edit, or Remove sites that launch automatically. Reorder tabs via drag-and-drop.
+- **Tab Profiles**: Create custom groups of URLs (e.g., Work, Social, News) for quick context switching.
+- **Pinning Tabs**: Set specific tabs to be pinned upon startup.
+- **Auto-Cleanup**: Toggle automatic closing of any tabs that are not in your fixed list at startup.
+- **Backup & Portability**: Export your configuration as a JSON file to easily backup or share your settings, and import them anytime.
+
+## Building for Production
+
+To package the extension for the Chrome Web Store or manual distribution, use the provided deployment script.
+
+1. Make sure the script is executable:
+   ```bash
+   chmod +x deploy.sh
+   ```
+2. Run the build script:
+   ```bash
+   ./deploy.sh
+   ```
+This will automatically generate a clean `.zip` file in the `dist` directory, appropriately versioned based on your `manifest.json`.
 
 ## Development
 
