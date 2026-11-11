@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MemoKit Settings</title>
+  <link rel="stylesheet" href="../shared/dialog.css">
   <link rel="stylesheet" href="options.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -59,9 +60,12 @@
         <header class="section-header">
           <div>
             <h1>Tab Profiles</h1>
-            <p>Group URLs into profiles for quick access from the extension popup.</p>
+            <p>Group the sites you use together (Infra, Monitoring, Git, AI…) and open them in one click or with <kbd>Alt</kbd>+<kbd>M</kbd>.</p>
           </div>
-          <button id="add-profile-btn" class="btn primary">Create Profile</button>
+          <div class="header-actions">
+            <input type="search" id="profile-filter" class="filter-input" placeholder="Filter profiles and sites…">
+            <button id="add-profile-btn" class="btn primary">Create Profile</button>
+          </div>
         </header>
 
         <div id="profiles-container" class="tabs-list">
@@ -72,15 +76,17 @@
 
       <section id="settings" class="tab-content">
         <header class="section-header">
-          <h1>System Settings</h1>
-          <p>Configure how MemoKit manages your workspace.</p>
+          <div>
+            <h1>System Settings</h1>
+            <p>Configure how MemoKit manages your workspace.</p>
+          </div>
         </header>
         
         <div class="settings-grid">
           <div class="setting-card">
             <div class="setting-info">
               <h3>Auto-Cleanup</h3>
-              <p>Automatically close any tabs that are not in your fixed list at startup.</p>
+              <p>At startup, close tabs that are not in your startup list. Pinned tabs are always kept.</p>
             </div>
             <label class="switch">
               <input type="checkbox" id="auto-cleanup-toggle">
@@ -90,10 +96,32 @@
 
           <div class="setting-card">
             <div class="setting-info">
-              <h3>Sync Enabled</h3>
-              <p>Your settings are automatically synced across your Chrome profile.</p>
+              <h3>Opening a profile</h3>
+              <p>What happens when you click a profile or press <kbd>↵</kbd> in the popup.
+                 <kbd>⇧↵</kbd> always opens a new window, <kbd>Ctrl↵</kbd> always adds to the current one.</p>
             </div>
-            <div class="status-badge">Always Active</div>
+            <select id="open-mode-select" class="select">
+              <option value="replace">Replace current window</option>
+              <option value="window">Open in a new window</option>
+              <option value="append">Add to current window</option>
+            </select>
+          </div>
+
+          <div class="setting-card">
+            <div class="setting-info">
+              <h3>Keyboard &amp; address bar</h3>
+              <p><kbd>Alt</kbd>+<kbd>M</kbd> opens the MemoKit search · <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> undoes the last profile switch.<br>
+                 In the address bar, type <kbd>mk</kbd> <kbd>Space</kbd> then a profile or site name.</p>
+            </div>
+            <button id="shortcuts-btn" class="btn secondary">Customize shortcuts</button>
+          </div>
+
+          <div class="setting-card">
+            <div class="setting-info">
+              <h3>Local storage only</h3>
+              <p>Your data stays in this browser (never synced, never sent anywhere). Use Export to move it to another machine.</p>
+            </div>
+            <div class="status-badge">Private</div>
           </div>
 
           <div class="setting-card">
@@ -101,10 +129,10 @@
               <h3>Backup & Portability</h3>
               <p>Import or export your startup tabs and profiles as a JSON file.</p>
             </div>
-            <div class="import-export-actions" style="display: flex; gap: 8px;">
+            <div class="import-export-actions">
               <button id="export-btn" class="btn secondary">Export</button>
               <button id="import-btn" class="btn secondary">Import</button>
-              <input type="file" id="import-file" style="display: none;" accept=".json">
+              <input type="file" id="import-file" accept=".json" hidden>
             </div>
           </div>
         </div>
@@ -112,8 +140,10 @@
 
       <section id="about" class="tab-content">
         <header class="section-header">
-          <h1>About MemoKit</h1>
-          <p>Version 1.2.0 (Manifest V3)</p>
+          <div>
+            <h1>About MemoKit</h1>
+            <p>Version <span id="version"></span> (Manifest V3)</p>
+          </div>
         </header>
         <div class="about-card">
           <p>MemoKit is a premium tab management kit designed for users who need a persistent and clean workspace every time they open their browser.</p>
@@ -124,7 +154,7 @@
           </div>
           <div class="license-info">
             <h4>License</h4>
-            <p>Apache License 2.0</p>
+            <p>MIT License</p>
           </div>
           <div class="repo-info">
             <h4>Repository</h4>
@@ -173,11 +203,19 @@
       <h3 id="profile-modal-title">Create Tab Profile</h3>
       <div class="form-group">
         <label for="profile-name">Profile Name</label>
-        <input type="text" id="profile-name" placeholder="E.g. Work, Social, News" required>
+        <input type="text" id="profile-name" placeholder="E.g. Infra, Monitoring, Git, AI" required>
       </div>
       <div class="form-group">
-        <label for="profile-urls">URLs (One per line)</label>
-        <textarea id="profile-urls" rows="5" placeholder="https://google.com&#10;https://github.com" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 0.9375rem; font-family: inherit; resize: vertical;"></textarea>
+        <label>Color</label>
+        <div id="profile-colors" class="color-picker" role="radiogroup"></div>
+      </div>
+      <div class="form-group">
+        <div class="label-row">
+          <label for="profile-urls">URLs (one per line, <code>https://</code> optional)</label>
+          <button type="button" id="fill-from-window-btn" class="link-btn">Use tabs of this window</button>
+        </div>
+        <textarea id="profile-urls" rows="10" placeholder="pve1.lan:8006&#10;https://grafana.lan&#10;https://gitlab.example.com"></textarea>
+        <p class="hint" id="profile-url-count"></p>
       </div>
       <div class="modal-actions">
         <button id="profile-cancel-btn" class="btn secondary">Cancel</button>
@@ -186,6 +224,6 @@
     </div>
   </div>
 
-  <script src="options.js"></script>
+  <script type="module" src="options.js"></script>
 </body>
 </html>

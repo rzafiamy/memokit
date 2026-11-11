@@ -25,12 +25,12 @@ These rules are derived from solving stability issues on Linux (Snap-based Chrom
 If Chromium fails to launch OR hangs after loading your extension:
 
 ### Step 1: Isolation (The Manifest Trick)
-*   **Rename `manifest.json`** to `manifest.json.bak`.
+*   **Rename `src/manifest.json`** to `src/manifest.json.bak`.
 *   Launch Chromium. If it opens, the extension was the cause.
 *   Restore `manifest.json` and move to Step 2.
 
 ### Step 2: Minimal Mode
-*   Simplify `background.js` to a single `console.log`.
+*   Simplify `src/background/service-worker.js` to a single `console.log`.
 *   Remove all permissions from `manifest.json`.
 *   Add permissions/code back one-by-one until it breaks. This identifies the specific API causing the crash.
 
@@ -41,10 +41,10 @@ If Chromium fails to launch OR hangs after loading your extension:
 ### Step 4: CLI Debugging
 Run Chromium from terminal with logging enabled to see Service Worker errors:
 ```bash
-chromium --load-extension=. --enable-logging=stderr --v=1 2>&1 | grep "MemoKit"
+chromium --load-extension=./src --enable-logging=stderr --v=1 2>&1 | grep "MemoKit"
 ```
 
 ## 📜 Code Style Guidelines
-*   **Wait Utility**: Always include a `const sleep = (ms) => new Promise(r => setTimeout(r, ms));`.
+*   **Wait Utility**: Use `sleep()` from `src/shared/utils.js`; timing values live in `TIMING` in `src/shared/constants.js`.
 *   **Safety Guards**: Never call `chrome.tabs.remove` without checking if it's the last tab in the window.
-*   **Error Logger**: Implement a local storage logger (`logError`) since background console logs are often hard to capture during crashes.
+*   **Error Logger**: Use `logError()` from `src/shared/logger.js` (persists to storage, shown on the options "About" tab) since background console logs are often hard to capture during crashes.

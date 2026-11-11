@@ -1,0 +1,88 @@
+/* MemoKit - shared confirm/alert dialog (used by popup and options pages). */
+
+.custom-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000; /* above page modals */
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.custom-dialog-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.custom-dialog-box {
+  background: var(--dialog-bg, #1e293b);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  width: 90%;
+  max-width: 280px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  transform: translateY(10px);
+  transition: transform 0.2s ease;
+}
+
+.custom-dialog-overlay.show .custom-dialog-box {
+  transform: translateY(0);
+}
+
+.custom-dialog-box h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: white;
+}
+
+.custom-dialog-box p {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.custom-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-dialog {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.btn-dialog.secondary {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.btn-dialog.secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.btn-dialog.primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-dialog.primary:hover {
+  background: var(--primary-hover, #4f46e5);
+}
